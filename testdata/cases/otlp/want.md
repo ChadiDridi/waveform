@@ -6,7 +6,9 @@
 ### Waves
 
 1. `payments`
+   - gate watches: checkout, frontend, payments
 2. `checkout`
+   - gate watches: checkout, frontend
 
 <details><summary>Ordering constraints</summary>
 
@@ -36,4 +38,4 @@ Observed in traces, missing from `dependsOn`:
 
 - changed file not owned by any service: README.md
 
-<sub>Read-only plan from observed traffic (5 services, 5 edges). waveform does not deploy anything.</sub>
+<sub>Plan from observed traffic (5 services, 5 edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>

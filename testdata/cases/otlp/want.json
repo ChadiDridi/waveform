@@ -122,6 +122,11 @@
             "service": "payments",
             "kind": "additive"
           }
+        ],
+        "watch": [
+          "checkout",
+          "frontend",
+          "payments"
         ]
       },
       {
@@ -134,6 +139,10 @@
               "payments"
             ]
           }
+        ],
+        "watch": [
+          "checkout",
+          "frontend"
         ]
       }
     ],

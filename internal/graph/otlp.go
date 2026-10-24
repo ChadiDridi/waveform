@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ConfidenceK is the call count at which an edge reaches 0.5 confidence.
@@ -109,10 +110,13 @@ func attr(kvs []otlpKV, key string) string {
 
 type spanRef struct {
 	service  string
+	parent   string // trace/parentSpan key, "" for roots
 	kind     otlpEnum
 	peer     string
 	err      bool
-	resolved bool
+	seen     time.Time
+	counted  bool // already attributed to an edge (as child, or via peer.service)
+	resolved bool // some child span in another service points at this span
 }
 
 type edgeAcc struct {
@@ -120,18 +124,27 @@ type edgeAcc struct {
 	traced        bool
 }
 
-// Builder accumulates OTLP spans into a Graph.
+// Builder accumulates OTLP spans into a Graph. It works in batch mode
+// (files, then Graph) and incrementally (Add batches, Flush, Prune), which is
+// what the live collector uses. Edge counts are kept separately from spans, so
+// spans can be pruned once their pairs had time to arrive.
 type Builder struct {
 	spans          map[string]*spanRef
-	keys           []string
-	parents        map[string]string
+	edges          map[[2]string]*edgeAcc
 	services       map[string]bool
 	minNano, maxNs uint64
+	now            func() time.Time
 }
 
 // NewBuilder returns an empty Builder.
 func NewBuilder() *Builder {
-	return &Builder{spans: map[string]*spanRef{}, parents: map[string]string{}, services: map[string]bool{}, minNano: math.MaxUint64}
+	return &Builder{
+		spans:    map[string]*spanRef{},
+		edges:    map[[2]string]*edgeAcc{},
+		services: map[string]bool{},
+		minNano:  math.MaxUint64,
+		now:      time.Now,
+	}
 }
 
 // AddFile reads one OTLP/JSON file (single document or JSON lines).
@@ -179,65 +192,95 @@ func (b *Builder) addSpan(svc string, sp otlpSpan) {
 	if _, dup := b.spans[key]; dup {
 		return
 	}
-	b.spans[key] = &spanRef{
+	ref := &spanRef{
 		service: svc,
 		kind:    sp.Kind,
 		peer:    attr(sp.Attributes, "peer.service"),
 		err:     sp.Status.Code == statusError,
+		seen:    b.now(),
 	}
-	b.keys = append(b.keys, key)
 	if sp.ParentSpanID != "" {
-		b.parents[key] = sp.TraceID + "/" + sp.ParentSpanID
+		ref.parent = sp.TraceID + "/" + sp.ParentSpanID
 	}
+	b.spans[key] = ref
 	if sp.Start > 0 {
 		b.minNano = min(b.minNano, uint64(sp.Start))
 	}
 	b.maxNs = max(b.maxNs, uint64(sp.End), uint64(sp.Start))
 }
 
-// Graph builds the graph. A cross-service parent/child span pair is one call.
-// Client or producer spans whose callee was never seen fall back to their
-// peer.service attribute. windowSeconds overrides the window derived from span
-// timestamps when > 0.
-func (b *Builder) Graph(windowSeconds float64) *Graph {
-	acc := map[[2]string]*edgeAcc{}
-	get := func(from, to string) *edgeAcc {
-		k := [2]string{from, to}
-		if acc[k] == nil {
-			acc[k] = &edgeAcc{}
-		}
-		return acc[k]
+func (b *Builder) edge(from, to string) *edgeAcc {
+	k := [2]string{from, to}
+	if b.edges[k] == nil {
+		b.edges[k] = &edgeAcc{}
 	}
-	for _, key := range b.keys {
-		child := b.spans[key]
-		parent, ok := b.spans[b.parents[key]]
-		if !ok || parent.service == child.service {
+	return b.edges[k]
+}
+
+// Flush attributes spans to edges. A cross-service parent/child span pair is
+// one call. Client or producer spans whose callee never showed up fall back
+// to their peer.service attribute once they are older than grace, so a late
+// child still gets matched first. Batch callers use grace 0.
+func (b *Builder) Flush(grace time.Duration) {
+	for _, child := range b.spans {
+		if child.counted || child.parent == "" {
+			continue
+		}
+		parent, ok := b.spans[child.parent]
+		if !ok {
+			continue
+		}
+		child.counted = true
+		if parent.service == child.service {
 			continue
 		}
 		parent.resolved = true
-		a := get(parent.service, child.service)
+		a := b.edge(parent.service, child.service)
 		a.calls++
 		a.traced = true
 		if child.err {
 			a.errors++
 		}
 	}
-	for _, key := range b.keys {
-		s := b.spans[key]
-		if s.resolved || s.peer == "" || s.peer == s.service {
+	cutoff := b.now().Add(-grace)
+	for _, s := range b.spans {
+		if s.resolved || s.peer == "" || s.peer == s.service || s.seen.After(cutoff) {
 			continue
 		}
 		if s.kind != kindClient && s.kind != kindProducer {
 			continue
 		}
+		s.resolved = true
 		b.services[s.peer] = true
-		a := get(s.service, s.peer)
+		a := b.edge(s.service, s.peer)
 		a.calls++
 		if s.err {
 			a.errors++
 		}
 	}
+}
 
+// Prune forgets spans received before t. Their edges stay counted.
+func (b *Builder) Prune(t time.Time) {
+	for k, s := range b.spans {
+		if s.seen.Before(t) {
+			delete(b.spans, k)
+		}
+	}
+}
+
+// Spans returns how many spans are held in memory.
+func (b *Builder) Spans() int { return len(b.spans) }
+
+// Graph flushes all pending spans (grace 0) and builds the graph.
+// windowSeconds overrides the window derived from span timestamps when > 0.
+func (b *Builder) Graph(windowSeconds float64) *Graph {
+	b.Flush(0)
+	return b.Build(windowSeconds)
+}
+
+// Build returns the graph from edges attributed so far, without flushing.
+func (b *Builder) Build(windowSeconds float64) *Graph {
 	window := windowSeconds
 	if window <= 0 && b.maxNs > b.minNano {
 		window = float64(b.maxNs-b.minNano) / 1e9
@@ -249,7 +292,7 @@ func (b *Builder) Graph(windowSeconds float64) *Graph {
 	for s := range b.services {
 		g.Services = append(g.Services, s)
 	}
-	for k, a := range acc {
+	for k, a := range b.edges {
 		conf := float64(a.calls) / float64(a.calls+ConfidenceK)
 		src := SourceTrace
 		if !a.traced {

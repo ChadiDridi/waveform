@@ -1,0 +1,86 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: waveplans.waveform.chadidridi.github.io
+spec:
+  group: waveform.chadidridi.github.io
+  names:
+    kind: WavePlan
+    listKind: WavePlanList
+    plural: waveplans
+    singular: waveplan
+    shortNames: [wp]
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - {name: Phase, type: string, jsonPath: .status.phase}
+        - {name: Wave, type: integer, jsonPath: .status.wave}
+        - {name: Message, type: string, jsonPath: .status.message, priority: 1}
+        - {name: Age, type: date, jsonPath: .metadata.creationTimestamp}
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            apiVersion: {type: string}
+            kind: {type: string}
+            metadata: {type: object}
+            spec:
+              type: object
+              required: [waves]
+              properties:
+                stepTimeout: {type: string, description: "Go duration, default 30m."}
+                approvals:
+                  type: array
+                  description: Irreversible steps approved by a human.
+                  items: {type: string}
+                gate:
+                  type: object
+                  properties:
+                    prometheusURL: {type: string}
+                    query: {type: string, description: "Go template with .Service, .Window, .Objective; returns a burn rate."}
+                    objective: {type: number}
+                    maxBurnRate: {type: number}
+                    window: {type: string}
+                    bake: {type: string}
+                    interval: {type: string}
+                    onNoData: {type: string, enum: [pass, fail]}
+                    minExposure: {type: number}
+                waves:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [index, steps]
+                    properties:
+                      index: {type: integer}
+                      watch:
+                        type: array
+                        items: {type: string}
+                      steps:
+                        type: array
+                        minItems: 1
+                        items:
+                          type: object
+                          required: [service, rollout]
+                          properties:
+                            service: {type: string}
+                            kind: {type: string, enum: [additive, removal]}
+                            after:
+                              type: array
+                              items: {type: string}
+                            irreversible: {type: boolean}
+                            rollout:
+                              type: object
+                              required: [name]
+                              properties:
+                                name: {type: string}
+                                namespace: {type: string}
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true

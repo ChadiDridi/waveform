@@ -6,7 +6,9 @@
 ### Waves
 
 1. `auth`, `inventory`
+   - gate watches: auth, gateway, inventory, orders, users
 2. `gateway`
+   - gate watches: gateway
 
 <details><summary>Ordering constraints</summary>
 
@@ -25,4 +27,4 @@
 | `orders` |  | 100% | 80.00 | 0.99 | orders → inventory |
 | `users` |  | 100% | 20.00 | 0.99 | users → auth |
 
-<sub>Read-only plan from observed traffic (5 services, 5 edges). waveform does not deploy anything.</sub>
+<sub>Plan from observed traffic (5 services, 5 edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>

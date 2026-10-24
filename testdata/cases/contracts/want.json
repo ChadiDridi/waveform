@@ -1,0 +1,156 @@
+{
+  "changes": [
+    {
+      "service": "api",
+      "kind": "additive"
+    },
+    {
+      "service": "orders-db",
+      "kind": "additive"
+    },
+    {
+      "service": "web",
+      "kind": "additive"
+    }
+  ],
+  "graph": {
+    "windowSeconds": 60,
+    "services": 4,
+    "edges": [
+      {
+        "from": "api",
+        "to": "orders-db",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      },
+      {
+        "from": "batch",
+        "to": "api",
+        "calls": 60,
+        "rps": 1,
+        "confidence": 0.857
+      },
+      {
+        "from": "web",
+        "to": "api",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      }
+    ]
+  },
+  "blast": {
+    "score": 1,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "api",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 101,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "orders-db",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "web",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "batch",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 1,
+        "confidence": 0.857,
+        "depth": 1,
+        "via": [
+          "batch",
+          "api"
+        ]
+      }
+    ],
+    "servicesInRadius": 4
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "orders-db",
+            "kind": "additive",
+            "irreversible": true
+          }
+        ],
+        "watch": [
+          "api",
+          "batch",
+          "orders-db",
+          "web"
+        ]
+      },
+      {
+        "index": 2,
+        "steps": [
+          {
+            "service": "api",
+            "kind": "additive",
+            "after": [
+              "orders-db"
+            ]
+          }
+        ],
+        "watch": [
+          "api",
+          "batch",
+          "web"
+        ]
+      },
+      {
+        "index": 3,
+        "steps": [
+          {
+            "service": "web",
+            "kind": "additive",
+            "after": [
+              "api",
+              "orders-db"
+            ]
+          }
+        ],
+        "watch": [
+          "web"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "before": "api",
+        "after": "web",
+        "reason": "provider first: additive change"
+      },
+      {
+        "before": "orders-db",
+        "after": "api",
+        "reason": "provider first: additive change"
+      },
+      {
+        "before": "orders-db",
+        "after": "web",
+        "reason": "provider first: additive change"
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "windowSeconds": 60,
+  "edges": [
+    {"from": "web", "to": "api", "calls": 6000, "rps": 100, "confidence": 0.998},
+    {"from": "api", "to": "orders-db", "calls": 6000, "rps": 100, "confidence": 0.998},
+    {"from": "batch", "to": "api", "calls": 60, "rps": 1, "confidence": 0.857}
+  ]
+}

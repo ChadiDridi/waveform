@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/ChadiDridi/waveform/internal/contract"
+	"github.com/ChadiDridi/waveform/internal/waveplan"
 )
 
 // Service is one deploy unit.
@@ -21,11 +24,21 @@ type Service struct {
 	// DependsOn lists declared providers. Omit to skip declared-vs-observed
 	// checks for this service; use [] to declare "no dependencies".
 	DependsOn []string `yaml:"dependsOn"`
+	// Rollout is the Argo Rollout deploying this service. Defaults to a
+	// Rollout named after the service in the default namespace.
+	Rollout *waveplan.RolloutRef `yaml:"rollout"`
+	// Irreversible marks steps (migrations, backfills) that need approval to
+	// start and are never rolled back automatically.
+	Irreversible bool `yaml:"irreversible"`
 }
 
 // Config is the parsed waveform.yaml.
 type Config struct {
 	Services map[string]Service `yaml:"services"`
+	// Namespace is the default namespace for Rollouts.
+	Namespace string                       `yaml:"namespace"`
+	Gate      waveplan.GateSpec            `yaml:"gate"`
+	Contracts map[string]contract.Contract `yaml:"contracts"`
 }
 
 // Load reads and validates a config file.
@@ -45,7 +58,43 @@ func Load(p string) (*Config, error) {
 			}
 		}
 	}
+	for name, ct := range c.Contracts {
+		if ct.Provider == "" || len(ct.Serves.Before) == 0 {
+			return nil, fmt.Errorf("%s: contract %s needs provider and serves.before", p, name)
+		}
+	}
 	return &c, nil
+}
+
+// RolloutFor returns the Rollout deploying svc.
+func (c *Config) RolloutFor(svc string) waveplan.RolloutRef {
+	ref := waveplan.RolloutRef{Name: svc}
+	if c != nil {
+		ref.Namespace = c.Namespace
+		if s, ok := c.Services[svc]; ok && s.Rollout != nil {
+			if s.Rollout.Name != "" {
+				ref.Name = s.Rollout.Name
+			}
+			if s.Rollout.Namespace != "" {
+				ref.Namespace = s.Rollout.Namespace
+			}
+		}
+	}
+	return ref
+}
+
+// Irreversible returns services marked irreversible.
+func (c *Config) Irreversible() map[string]bool {
+	out := map[string]bool{}
+	if c == nil {
+		return out
+	}
+	for name, s := range c.Services {
+		if s.Irreversible {
+			out[name] = true
+		}
+	}
+	return out
 }
 
 // Declared returns declared dependencies keyed by consumer, only for services

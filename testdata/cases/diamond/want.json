@@ -122,6 +122,13 @@
             "service": "inventory",
             "kind": "additive"
           }
+        ],
+        "watch": [
+          "auth",
+          "gateway",
+          "inventory",
+          "orders",
+          "users"
         ]
       },
       {
@@ -135,6 +142,9 @@
               "inventory"
             ]
           }
+        ],
+        "watch": [
+          "gateway"
         ]
       }
     ],

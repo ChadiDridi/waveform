@@ -6,8 +6,11 @@
 ### Waves
 
 1. `mobile-bff`, `new-api`
+   - gate watches: frontend, mobile-bff, new-api
 2. `frontend`
+   - gate watches: frontend
 3. `legacy-api` (removal)
+   - gate watches: frontend, legacy-api, mobile-bff
 
 <details><summary>Ordering constraints</summary>
 
@@ -26,4 +29,4 @@
 | `legacy-api` | yes | 100% | 12.00 | 1.00 |  |
 | `mobile-bff` | yes | 100% | 2.00 | 1.00 |  |
 
-<sub>Read-only plan from observed traffic (5 services, 5 edges). waveform does not deploy anything.</sub>
+<sub>Plan from observed traffic (5 services, 5 edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>

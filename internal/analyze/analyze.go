@@ -4,23 +4,26 @@ package analyze
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/ChadiDridi/waveform/internal/blast"
 	"github.com/ChadiDridi/waveform/internal/changeset"
+	"github.com/ChadiDridi/waveform/internal/contract"
 	"github.com/ChadiDridi/waveform/internal/graph"
 	"github.com/ChadiDridi/waveform/internal/plan"
 )
 
 // Report is the full phase 1 output.
 type Report struct {
-	Changes    []changeset.Change `json:"changes"`
-	Graph      GraphSummary       `json:"graph"`
-	Cycles     []graph.Cycle      `json:"cycles,omitempty"`
-	Undeclared []graph.Edge       `json:"undeclared,omitempty"`
-	Unobserved []graph.Dep        `json:"unobserved,omitempty"`
-	Blast      blast.Result       `json:"blast"`
-	Plan       plan.Plan          `json:"plan"`
-	Warnings   []string           `json:"warnings,omitempty"`
+	Changes    []changeset.Change   `json:"changes"`
+	Graph      GraphSummary         `json:"graph"`
+	Cycles     []graph.Cycle        `json:"cycles,omitempty"`
+	Undeclared []graph.Edge         `json:"undeclared,omitempty"`
+	Unobserved []graph.Dep          `json:"unobserved,omitempty"`
+	Blast      blast.Result         `json:"blast"`
+	Plan       plan.Plan            `json:"plan"`
+	Contracts  []contract.Violation `json:"contractViolations,omitempty"`
+	Warnings   []string             `json:"warnings,omitempty"`
 }
 
 // GraphSummary describes the observed graph the plan was computed from.
@@ -36,9 +39,16 @@ type Input struct {
 	Changes  []changeset.Change
 	Declared map[string][]string
 	Unmapped []string // changed files owned by no service
+	// Irreversible marks steps that need approval and manual rollback.
+	Irreversible map[string]bool
+	// MinExposure is the exposure at which a caller joins a wave's watch
+	// set. Defaults to 0.05.
+	MinExposure float64
+	Contracts   map[string]contract.Contract
 }
 
-// Run computes the report. It fails only when no valid wave order exists.
+// Run computes the report. It fails when no valid wave order exists or the
+// order breaks an API contract.
 func Run(in Input) (Report, error) {
 	r := Report{
 		Changes: in.Changes,
@@ -82,6 +92,43 @@ func Run(in Input) (Report, error) {
 	}
 	if r.Plan.Waves == nil {
 		r.Plan.Waves = []plan.Wave{}
+	}
+	if err != nil {
+		return r, err
+	}
+
+	minExp := in.MinExposure
+	if minExp <= 0 {
+		minExp = 0.05
+	}
+	var waves [][]string
+	for i := range r.Plan.Waves {
+		w := &r.Plan.Waves[i]
+		var names []string
+		for j := range w.Steps {
+			names = append(names, w.Steps[j].Service)
+			w.Steps[j].Irreversible = in.Irreversible[w.Steps[j].Service]
+		}
+		waves = append(waves, names)
+		res, err := blast.Compute(dag, names)
+		if err != nil {
+			return r, err
+		}
+		for _, imp := range res.Impacts {
+			if imp.Exposure >= minExp {
+				w.Watch = append(w.Watch, imp.Service)
+			}
+		}
+		for _, u := range res.Unknown {
+			w.Watch = append(w.Watch, u)
+		}
+		sort.Strings(w.Watch)
+	}
+
+	r.Contracts = contract.Check(in.Contracts, waves)
+	if len(r.Contracts) > 0 {
+		err = fmt.Errorf("wave order breaks %d API contract(s); adjust change kinds or split the change set", len(r.Contracts))
+		r.Warnings = append(r.Warnings, err.Error())
 	}
 	return r, err
 }

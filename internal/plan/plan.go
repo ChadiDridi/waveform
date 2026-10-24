@@ -31,12 +31,16 @@ type Step struct {
 	Service string         `json:"service"`
 	Kind    changeset.Kind `json:"kind"`
 	After   []string       `json:"after,omitempty"`
+	// Irreversible steps need approval and are never rolled back automatically.
+	Irreversible bool `json:"irreversible,omitempty"`
 }
 
 // Wave is a set of steps that can run in parallel.
 type Wave struct {
 	Index int    `json:"index"`
 	Steps []Step `json:"steps"`
+	// Watch lists services whose SLO gates this wave (filled by analyze).
+	Watch []string `json:"watch,omitempty"`
 }
 
 // Plan is the ordered rollout.

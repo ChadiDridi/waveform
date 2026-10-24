@@ -1,0 +1,133 @@
+{
+  "changes": [
+    {
+      "service": "api",
+      "kind": "additive"
+    },
+    {
+      "service": "web",
+      "kind": "additive"
+    }
+  ],
+  "graph": {
+    "windowSeconds": 60,
+    "services": 4,
+    "edges": [
+      {
+        "from": "api",
+        "to": "orders-db",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      },
+      {
+        "from": "batch",
+        "to": "api",
+        "calls": 60,
+        "rps": 1,
+        "confidence": 0.857
+      },
+      {
+        "from": "web",
+        "to": "api",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      }
+    ]
+  },
+  "blast": {
+    "score": 0.6689,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "api",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 101,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "web",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "batch",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 1,
+        "confidence": 0.857,
+        "depth": 1,
+        "via": [
+          "batch",
+          "api"
+        ]
+      }
+    ],
+    "servicesInRadius": 3
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "api",
+            "kind": "additive"
+          }
+        ],
+        "watch": [
+          "api",
+          "batch",
+          "web"
+        ]
+      },
+      {
+        "index": 2,
+        "steps": [
+          {
+            "service": "web",
+            "kind": "additive",
+            "after": [
+              "api"
+            ]
+          }
+        ],
+        "watch": [
+          "web"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "before": "api",
+        "after": "web",
+        "reason": "provider first: additive change"
+      }
+    ]
+  },
+  "contractViolations": [
+    {
+      "contract": "orders-api",
+      "consumer": "batch",
+      "provider": "api",
+      "wave": 1,
+      "message": "orders-api: batch may call v1 but a provider pod set serves only [v2]"
+    },
+    {
+      "contract": "orders-api",
+      "consumer": "web",
+      "provider": "api",
+      "wave": 1,
+      "message": "orders-api: web may call v1 but a provider pod set serves only [v2]"
+    }
+  ],
+  "warnings": [
+    "wave order breaks 2 API contract(s); adjust change kinds or split the change set"
+  ]
+}

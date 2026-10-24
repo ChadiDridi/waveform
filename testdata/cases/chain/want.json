@@ -73,6 +73,11 @@
             "service": "db",
             "kind": "additive"
           }
+        ],
+        "watch": [
+          "api",
+          "db",
+          "web"
         ]
       },
       {
@@ -85,6 +90,10 @@
               "db"
             ]
           }
+        ],
+        "watch": [
+          "api",
+          "web"
         ]
       }
     ],

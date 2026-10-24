@@ -1,0 +1,9 @@
+# api drops v1 but the change is declared additive, so api ships first
+# and web/batch still call v1.
+contracts:
+  orders-api:
+    provider: api
+    serves: {before: [v1], after: [v2]}
+    consumers:
+      web: {before: v1, after: v2}
+      batch: {before: v1}

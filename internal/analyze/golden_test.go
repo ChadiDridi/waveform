@@ -64,6 +64,9 @@ func loadCase(t *testing.T, dir string) Input {
 			t.Fatal(err)
 		}
 		in.Declared = cfg.Declared()
+		in.Irreversible = cfg.Irreversible()
+		in.Contracts = cfg.Contracts
+		in.MinExposure = cfg.Gate.MinExposure
 		mapped, in.Unmapped = changeset.FromFiles(cfg, lines(t, filepath.Join(dir, "files.txt")))
 	}
 	for _, l := range lines(t, filepath.Join(dir, "changes.txt")) {

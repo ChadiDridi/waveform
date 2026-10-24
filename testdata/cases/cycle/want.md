@@ -6,7 +6,9 @@
 ### Waves
 
 1. `c`
+   - gate watches: a, b, c, edge
 2. `a`
+   - gate watches: a, edge
 
 <details><summary>Ordering constraints</summary>
 
@@ -27,4 +29,4 @@
 
 - cycle [a b c]: ignored lowest-traffic edge c -> a for ordering
 
-<sub>Read-only plan from observed traffic (4 services, 4 edges). waveform does not deploy anything.</sub>
+<sub>Plan from observed traffic (4 services, 4 edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>

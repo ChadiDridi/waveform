@@ -1,0 +1,77 @@
+# waveform controller: reconciles WavePlans, drives Argo Rollouts.
+# Apply deploy/crd.yaml first. Argo Rollouts must be installed.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: waveform-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: waveform
+  namespace: waveform-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: waveform
+rules:
+  - apiGroups: [waveform.chadidridi.github.io]
+    resources: [waveplans]
+    verbs: [get, list, watch]
+  - apiGroups: [waveform.chadidridi.github.io]
+    resources: [waveplans/status]
+    verbs: [get, patch, update]
+  - apiGroups: [argoproj.io]
+    resources: [rollouts]
+    verbs: [get, list, patch]
+  - apiGroups: [argoproj.io]
+    resources: [rollouts/status]
+    verbs: [patch]
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: waveform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: waveform
+subjects:
+  - kind: ServiceAccount
+    name: waveform
+    namespace: waveform-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waveform-controller
+  namespace: waveform-system
+spec:
+  replicas: 1 # no leader election yet: keep a single replica
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: waveform-controller}
+  template:
+    metadata:
+      labels: {app: waveform-controller}
+    spec:
+      serviceAccountName: waveform
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: controller
+          image: ghcr.io/chadidridi/waveform:latest
+          args: [controller]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}

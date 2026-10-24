@@ -6,6 +6,7 @@
 ### Waves
 
 1. `api`, `billing`
+   - gate watches: api, billing, web
 
 ### Blast radius
 
@@ -18,4 +19,4 @@
 
 - changed service not in observed graph, ordered without constraints: billing
 
-<sub>Read-only plan from observed traffic (3 services, 2 edges). waveform does not deploy anything.</sub>
+<sub>Plan from observed traffic (3 services, 2 edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>

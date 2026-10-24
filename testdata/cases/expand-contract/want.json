@@ -110,6 +110,11 @@
             "service": "new-api",
             "kind": "additive"
           }
+        ],
+        "watch": [
+          "frontend",
+          "mobile-bff",
+          "new-api"
         ]
       },
       {
@@ -122,6 +127,9 @@
               "new-api"
             ]
           }
+        ],
+        "watch": [
+          "frontend"
         ]
       },
       {
@@ -135,6 +143,11 @@
               "mobile-bff"
             ]
           }
+        ],
+        "watch": [
+          "frontend",
+          "legacy-api",
+          "mobile-bff"
         ]
       }
     ],

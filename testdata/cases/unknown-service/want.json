@@ -72,6 +72,11 @@
             "service": "billing",
             "kind": "additive"
           }
+        ],
+        "watch": [
+          "api",
+          "billing",
+          "web"
         ]
       }
     ],

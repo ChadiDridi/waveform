@@ -1,0 +1,10 @@
+services:
+  orders-db:
+    irreversible: true   # schema migration job
+contracts:
+  orders-api:
+    provider: api
+    serves: {before: [v1], after: [v1, v2]}
+    consumers:
+      web: {before: v1, after: v2}
+      batch: {before: v1}

@@ -45,9 +45,15 @@ func (r Report) Markdown() string {
 			if s.Kind == changeset.Removal {
 				p += " (removal)"
 			}
+			if s.Irreversible {
+				p += " ⚠ irreversible: needs approval, manual rollback"
+			}
 			parts = append(parts, p)
 		}
 		w("%d. %s\n", wave.Index, strings.Join(parts, ", "))
+		if len(wave.Watch) > 0 {
+			w("   - gate watches: %s\n", strings.Join(wave.Watch, ", "))
+		}
 	}
 	w("\n")
 	if len(r.Plan.Constraints) > 0 {
@@ -76,6 +82,17 @@ func (r Report) Markdown() string {
 
 func (r Report) writeGraphNotes(b *strings.Builder) {
 	w := func(format string, a ...any) { fmt.Fprintf(b, format, a...) }
+	if len(r.Contracts) > 0 {
+		w("### API contract violations\n\n")
+		for _, v := range r.Contracts {
+			when := fmt.Sprintf("during wave %d", v.Wave)
+			if v.Wave > len(r.Plan.Waves) {
+				when = "after rollout"
+			}
+			w("- %s %s\n", when, v.Message)
+		}
+		w("\n")
+	}
 	if len(r.Undeclared) > 0 {
 		w("### Undeclared dependencies\n\nObserved in traces, missing from `dependsOn`:\n\n")
 		for _, e := range r.Undeclared {
@@ -97,6 +114,6 @@ func (r Report) writeGraphNotes(b *strings.Builder) {
 		}
 		w("\n")
 	}
-	w("<sub>Read-only plan from observed traffic (%d services, %d edges). waveform does not deploy anything.</sub>\n",
+	w("<sub>Plan from observed traffic (%d services, %d edges). Nothing is deployed until the plan is run (`waveform run` or a WavePlan resource).</sub>\n",
 		r.Graph.Services, len(r.Graph.Edges))
 }
