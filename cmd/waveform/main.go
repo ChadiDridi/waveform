@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -27,7 +28,18 @@ import (
 	"github.com/ChadiDridi/waveform/internal/prom"
 )
 
+// version is set by release builds (-X main.version); `go install` builds
+// fall back to the module version from build info.
 var version = "dev"
+
+func init() {
+	if version != "dev" {
+		return
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		version = bi.Main.Version
+	}
+}
 
 const usage = `waveform plans multi-service deploys from the observed service graph.
 
