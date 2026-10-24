@@ -1,0 +1,83 @@
+{
+  "changes": [
+    {
+      "service": "api",
+      "kind": "additive"
+    },
+    {
+      "service": "billing",
+      "kind": "additive"
+    }
+  ],
+  "graph": {
+    "windowSeconds": 60,
+    "services": 3,
+    "edges": [
+      {
+        "from": "api",
+        "to": "db",
+        "calls": 3000,
+        "rps": 50,
+        "confidence": 0.997
+      },
+      {
+        "from": "web",
+        "to": "api",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      }
+    ]
+  },
+  "blast": {
+    "score": 0.8,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "api",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "web",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 0.998,
+        "depth": 1,
+        "via": [
+          "web",
+          "api"
+        ]
+      }
+    ],
+    "unknown": [
+      "billing"
+    ],
+    "servicesInRadius": 2
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "api",
+            "kind": "additive"
+          },
+          {
+            "service": "billing",
+            "kind": "additive"
+          }
+        ]
+      }
+    ],
+    "constraints": null
+  },
+  "warnings": [
+    "changed service not in observed graph, ordered without constraints: billing"
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "changes": [
+    {
+      "service": "a",
+      "kind": "additive"
+    },
+    {
+      "service": "c",
+      "kind": "additive"
+    }
+  ],
+  "graph": {
+    "windowSeconds": 60,
+    "services": 4,
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "calls": 3000,
+        "rps": 50,
+        "confidence": 0.997
+      },
+      {
+        "from": "c",
+        "to": "a",
+        "calls": 300,
+        "rps": 5,
+        "confidence": 0.968
+      },
+      {
+        "from": "edge",
+        "to": "a",
+        "calls": 6000,
+        "rps": 100,
+        "confidence": 0.998
+      }
+    ]
+  },
+  "cycles": [
+    {
+      "services": [
+        "a",
+        "b",
+        "c"
+      ],
+      "broken": {
+        "from": "c",
+        "to": "a",
+        "calls": 300,
+        "rps": 5,
+        "confidence": 0.968
+      }
+    }
+  ],
+  "blast": {
+    "score": 1,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "a",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "c",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 50,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "b",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 0.997,
+        "depth": 1,
+        "via": [
+          "b",
+          "c"
+        ]
+      },
+      {
+        "service": "edge",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 0.998,
+        "depth": 1,
+        "via": [
+          "edge",
+          "a"
+        ]
+      }
+    ],
+    "servicesInRadius": 4
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "c",
+            "kind": "additive"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "steps": [
+          {
+            "service": "a",
+            "kind": "additive",
+            "after": [
+              "c"
+            ]
+          }
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "before": "c",
+        "after": "a",
+        "reason": "provider first: additive change"
+      }
+    ]
+  },
+  "warnings": [
+    "cycle [a b c]: ignored lowest-traffic edge c -\u003e a for ordering"
+  ]
+}

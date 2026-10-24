@@ -1,0 +1,62 @@
+name: waveform plan
+description: Comment a dependency-aware deploy wave plan and blast radius on the pull request.
+branding:
+  icon: activity
+  color: blue
+inputs:
+  graph:
+    description: Observed graph JSON (from `waveform graph`). Use this or `traces`.
+    required: false
+  traces:
+    description: OTLP/JSON trace file(s), comma-separated.
+    required: false
+  config:
+    description: Path to waveform.yaml.
+    required: false
+    default: waveform.yaml
+  base-ref:
+    description: Ref to diff against. Defaults to the PR base branch.
+    required: false
+  changes:
+    description: Extra explicit changes, comma-separated `svc[=removal]`.
+    required: false
+  comment:
+    description: Post or update the PR comment.
+    required: false
+    default: "true"
+  token:
+    description: Token used to comment.
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+    - name: Build waveform
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: go build -o "$RUNNER_TEMP/waveform" ./cmd/waveform
+    - name: Plan
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        IN_GRAPH: ${{ inputs.graph }}
+        IN_TRACES: ${{ inputs.traces }}
+        IN_CONFIG: ${{ inputs.config }}
+        IN_BASE: ${{ inputs.base-ref || github.base_ref }}
+        IN_CHANGES: ${{ inputs.changes }}
+        IN_COMMENT: ${{ inputs.comment }}
+      run: |
+        args=(plan --config "$IN_CONFIG")
+        [ -n "$IN_GRAPH" ] && args+=(--graph "$IN_GRAPH")
+        [ -n "$IN_TRACES" ] && args+=(--traces "$IN_TRACES")
+        [ -n "$IN_CHANGES" ] && args+=(--change "$IN_CHANGES")
+        if [ -n "$IN_BASE" ]; then
+          git fetch --no-tags --depth=1 origin "$IN_BASE" 2>/dev/null || true
+          args+=(--git-diff "origin/$IN_BASE...HEAD")
+        fi
+        [ "$IN_COMMENT" = "true" ] && args+=(--github-comment)
+        "$RUNNER_TEMP/waveform" "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"

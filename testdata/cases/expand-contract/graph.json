@@ -1,0 +1,10 @@
+{
+  "windowSeconds": 60,
+  "edges": [
+    {"from": "frontend", "to": "legacy-api", "calls": 600, "rps": 10, "confidence": 0.984},
+    {"from": "frontend", "to": "new-api", "calls": 2400, "rps": 40, "confidence": 0.996},
+    {"from": "mobile-bff", "to": "legacy-api", "calls": 120, "rps": 2, "confidence": 0.923},
+    {"from": "new-api", "to": "store", "calls": 2400, "rps": 40, "confidence": 0.996},
+    {"from": "legacy-api", "to": "store", "calls": 720, "rps": 12, "confidence": 0.986}
+  ]
+}

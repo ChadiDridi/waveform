@@ -1,0 +1,4 @@
+frontend
+mobile-bff
+new-api
+legacy-api=removal

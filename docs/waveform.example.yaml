@@ -1,0 +1,11 @@
+services:
+  frontend:
+    paths: ["web/**"]
+    dependsOn: [checkout]
+  checkout:
+    paths: ["services/checkout"]
+    dependsOn: [payments, inventory, shipping]
+  payments:
+    paths: ["services/payments/**/*.go"]
+  inventory:
+    paths: ["services/inventory"]

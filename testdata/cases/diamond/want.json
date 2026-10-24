@@ -1,0 +1,154 @@
+{
+  "changes": [
+    {
+      "service": "auth",
+      "kind": "additive"
+    },
+    {
+      "service": "gateway",
+      "kind": "additive"
+    },
+    {
+      "service": "inventory",
+      "kind": "additive"
+    }
+  ],
+  "graph": {
+    "windowSeconds": 60,
+    "services": 5,
+    "edges": [
+      {
+        "from": "gateway",
+        "to": "orders",
+        "calls": 4800,
+        "rps": 80,
+        "confidence": 0.998
+      },
+      {
+        "from": "gateway",
+        "to": "users",
+        "calls": 1200,
+        "rps": 20,
+        "confidence": 0.992
+      },
+      {
+        "from": "orders",
+        "to": "auth",
+        "calls": 600,
+        "rps": 10,
+        "confidence": 0.984
+      },
+      {
+        "from": "orders",
+        "to": "inventory",
+        "calls": 1800,
+        "rps": 30,
+        "confidence": 0.994
+      },
+      {
+        "from": "users",
+        "to": "auth",
+        "calls": 1200,
+        "rps": 20,
+        "confidence": 0.992
+      }
+    ]
+  },
+  "blast": {
+    "score": 1,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "gateway",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 100,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "auth",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 30,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "inventory",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 30,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "orders",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 80,
+        "confidence": 0.994,
+        "depth": 1,
+        "via": [
+          "orders",
+          "inventory"
+        ]
+      },
+      {
+        "service": "users",
+        "changed": false,
+        "exposure": 1,
+        "rpsAtRisk": 20,
+        "confidence": 0.992,
+        "depth": 1,
+        "via": [
+          "users",
+          "auth"
+        ]
+      }
+    ],
+    "servicesInRadius": 5
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "auth",
+            "kind": "additive"
+          },
+          {
+            "service": "inventory",
+            "kind": "additive"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "steps": [
+          {
+            "service": "gateway",
+            "kind": "additive",
+            "after": [
+              "auth",
+              "inventory"
+            ]
+          }
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "before": "auth",
+        "after": "gateway",
+        "reason": "provider first: additive change"
+      },
+      {
+        "before": "inventory",
+        "after": "gateway",
+        "reason": "provider first: additive change"
+      }
+    ]
+  }
+}

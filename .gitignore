@@ -1,0 +1,4 @@
+/waveform
+/dist/
+*.test
+*.out

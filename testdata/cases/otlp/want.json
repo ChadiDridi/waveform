@@ -1,0 +1,151 @@
+{
+  "changes": [
+    {
+      "service": "checkout",
+      "kind": "additive",
+      "files": [
+        "services/checkout/handler.go"
+      ]
+    },
+    {
+      "service": "payments",
+      "kind": "additive",
+      "files": [
+        "services/payments/internal/api.go"
+      ]
+    }
+  ],
+  "graph": {
+    "windowSeconds": 9.505,
+    "services": 5,
+    "edges": [
+      {
+        "from": "checkout",
+        "to": "inventory",
+        "calls": 20,
+        "rps": 2.1042,
+        "confidence": 0.667,
+        "source": "trace"
+      },
+      {
+        "from": "checkout",
+        "to": "payments",
+        "calls": 20,
+        "errors": 2,
+        "rps": 2.1042,
+        "confidence": 0.667,
+        "source": "trace"
+      },
+      {
+        "from": "frontend",
+        "to": "checkout",
+        "calls": 20,
+        "rps": 2.1042,
+        "confidence": 0.667,
+        "source": "trace"
+      },
+      {
+        "from": "frontend",
+        "to": "inventory",
+        "calls": 5,
+        "rps": 0.526,
+        "confidence": 0.333,
+        "source": "trace"
+      },
+      {
+        "from": "payments",
+        "to": "stripe",
+        "calls": 20,
+        "rps": 2.1042,
+        "confidence": 0.333,
+        "source": "peer.service"
+      }
+    ]
+  },
+  "undeclared": [
+    {
+      "from": "frontend",
+      "to": "inventory",
+      "calls": 5,
+      "rps": 0.526,
+      "confidence": 0.333,
+      "source": "trace"
+    }
+  ],
+  "unobserved": [
+    {
+      "from": "checkout",
+      "to": "shipping"
+    }
+  ],
+  "blast": {
+    "score": 0.6154,
+    "level": "high",
+    "impacts": [
+      {
+        "service": "checkout",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 4.2084,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "payments",
+        "changed": true,
+        "exposure": 1,
+        "rpsAtRisk": 2.1042,
+        "confidence": 1,
+        "depth": 0
+      },
+      {
+        "service": "frontend",
+        "changed": false,
+        "exposure": 0.8,
+        "rpsAtRisk": 2.1042,
+        "confidence": 0.667,
+        "depth": 1,
+        "via": [
+          "frontend",
+          "checkout"
+        ]
+      }
+    ],
+    "servicesInRadius": 3
+  },
+  "plan": {
+    "waves": [
+      {
+        "index": 1,
+        "steps": [
+          {
+            "service": "payments",
+            "kind": "additive"
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "steps": [
+          {
+            "service": "checkout",
+            "kind": "additive",
+            "after": [
+              "payments"
+            ]
+          }
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "before": "payments",
+        "after": "checkout",
+        "reason": "provider first: additive change"
+      }
+    ]
+  },
+  "warnings": [
+    "changed file not owned by any service: README.md"
+  ]
+}

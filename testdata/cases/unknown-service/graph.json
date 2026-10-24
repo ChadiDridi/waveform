@@ -1,0 +1,7 @@
+{
+  "windowSeconds": 60,
+  "edges": [
+    {"from": "web", "to": "api", "calls": 6000, "rps": 100, "confidence": 0.998},
+    {"from": "api", "to": "db", "calls": 3000, "rps": 50, "confidence": 0.997}
+  ]
+}

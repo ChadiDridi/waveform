@@ -1,0 +1,10 @@
+{
+  "windowSeconds": 60,
+  "edges": [
+    {"from": "gateway", "to": "orders", "calls": 4800, "rps": 80, "confidence": 0.998},
+    {"from": "gateway", "to": "users", "calls": 1200, "rps": 20, "confidence": 0.992},
+    {"from": "orders", "to": "auth", "calls": 600, "rps": 10, "confidence": 0.984},
+    {"from": "orders", "to": "inventory", "calls": 1800, "rps": 30, "confidence": 0.994},
+    {"from": "users", "to": "auth", "calls": 1200, "rps": 20, "confidence": 0.992}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "windowSeconds": 60,
+  "edges": [
+    {"from": "a", "to": "b", "calls": 6000, "rps": 100, "confidence": 0.998},
+    {"from": "b", "to": "c", "calls": 3000, "rps": 50, "confidence": 0.997},
+    {"from": "c", "to": "a", "calls": 300, "rps": 5, "confidence": 0.968},
+    {"from": "edge", "to": "a", "calls": 6000, "rps": 100, "confidence": 0.998}
+  ]
+}
