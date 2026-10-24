@@ -175,7 +175,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
-      - uses: ChadiDridi/waveform@main
+      - uses: ChadiDridi/waveform@v0.1.0
         with:
           graph: ops/graph.json
 ```
